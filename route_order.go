@@ -81,7 +81,14 @@ func orders(writer http.ResponseWriter, request *http.Request) {
 	if curUser.Privileges&data.CanAdmin == data.CanAdmin {
 		navbar = "admin.navbar"
 	}
-	generateHTML(writer, dos, "layout", navbar, "orders")
+	info := struct {
+		CanEdit       bool
+		DisplayOrders []displayOrder
+	}{
+		curUser.Privileges&data.CanEditAll == data.CanEditAll,
+		dos,
+	}
+	generateHTML(writer, info, "layout", navbar, "orders")
 }
 
 func newOrder(writer http.ResponseWriter, request *http.Request) {

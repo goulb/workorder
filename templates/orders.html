@@ -3,7 +3,7 @@
   <div id="toolbar">
     <div class="form-inline" role="form">
       <div class="form-group">
-        <a class="btn btn-primary" href="/orders/new">
+        <a id="insert" class="btn btn-primary" href="/orders/new">
           <i class="fa fa-plus" title="Align Left"></i>
           添加
         </a>
@@ -32,7 +32,7 @@
       <th data-field="provider">派车单位</th>
       <th data-field="carnum">车牌号</th>
       <th data-field="createdat">单据创建时间</th>
-      <th data-field="option"></th>
+      <th data-field="operate"></th>
       </tr>
     </thead>
   </table>
@@ -46,7 +46,7 @@
       <a class="btn btn-default" href="#" id="search">
         <i class="fa fa-search" title="搜索"></i>
       </a>
-      <a class="btn btn-default" href="/orders/new">
+      <a id="insert" class="btn btn-default" href="/orders/new">
         <i class="fa fa-plus" title="添加任务单"></i>
       </a>
     </div>
@@ -71,8 +71,9 @@
   </div>
 </div>
 <script type="text/javascript" >
+var canedit={{.CanEdit}}
 var data = [
-		{{ range . }}
+		{{ range .DisplayOrders }}
 		{
       id:{{.Id}},
 		 	num:{{.Num}},
@@ -82,13 +83,22 @@ var data = [
 			provider:"{{.Provider}}",
 			carnum:"{{.CarNum}}",
 			createdat:"{{.CreatedAt}}",
-      option:'<a href="/orders/edit?id={{.Id}}"><i class="fa fa-edit" title="修改"></i></a>\
-        <a href="/orders/delete?id={{.Id}}"><i class="fa fa-trash" title="删除"></i></a>\
-        <a href="/orders/submit?id={{.Id}}"><i class="fa fa-upload" title="提交"></i></a>\
-        <a href="/orders/lock?id={{.Id}}"><i class="fa fa-lock" title="锁定"></i></a>',
+      operate:getoperate({{.Id}},{{.Locked}}),
 		},	
 	{{ end }}
 	];
+function getoperate(id,locked){
+  var html=""
+  if (canedit && !locked){
+    html+='<a href="/orders/edit?id={'+id+'"><i class="fa fa-edit" title="修改"></i></a>\
+      <a href="/orders/delete?id='+id+'"><i class="fa fa-trash" title="删除"></i></a>';
+  }else if (locked){
+    html+='<a href="/orders/unlock?id='+id+'"><i class="fa fa-unlock" title="解锁"></i></a>';
+  }else{
+    html+='<a href="/orders/lock?id='+id+'"><i class="fa fa-lock" title="锁定"></i></a>';
+  }
+  return html;
+}
 function detailFormatter(index, row) {
   var html = [];
   html.push('修改删除提交锁定')
@@ -110,7 +120,9 @@ $(document).ready(function(){
   for (i in data){
     showdata(data[i])
 	}
-  
+  if (!canedit){
+    $("a#insert").addClass("disabled")
+  }
   $("a#search").click(function(){
     $("#panels").children(".panel").remove();
     for (i in data){
