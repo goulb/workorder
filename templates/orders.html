@@ -90,7 +90,7 @@ var data = [
 function getoperate(id,locked){
   var html=""
   if (canedit && !locked){
-    html+='<a href="/orders/edit?id={'+id+'"><i class="fa fa-edit" title="修改"></i></a>\
+    html+='<a href="/orders/edit?id='+id+'"><i class="fa fa-edit" title="修改"></i></a>\
       <a href="/orders/delete?id='+id+'"><i class="fa fa-trash" title="删除"></i></a>';
   }else if (locked){
     html+='<a href="/orders/unlock?id='+id+'"><i class="fa fa-unlock" title="解锁"></i></a>';

@@ -135,11 +135,13 @@ func editOrder(writer http.ResponseWriter, request *http.Request) {
 		Depts     []data.Department
 		Providers []data.Provider
 		CarTypes  []data.CarType
+		OrderNum  string
 		Order     data.Order
 	}{
 		depts,
 		provs,
 		cartypes,
+		fmt.Sprintf("GXJCWL%07d", 20000+order.Id),
 		order,
 	}
 	generateHTML(writer, info, "login.layout", "public.navbar", "editorder")
