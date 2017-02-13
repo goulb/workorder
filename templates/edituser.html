@@ -1,0 +1,51 @@
+{{ define "content" }}
+
+<form class="form-signin center" role="form" action="/users/update" method="post">
+  <h2 class="form-signin-heading">
+    <i class="fa fa-comments-o">
+      修改用户
+    </i>
+  </h2>
+  <input type="hidden" name="id" value="{{ .User.Id }}">
+  <input type="name" name="name" class="form-control" placeholder="用车单位名称" value="{{ .User.Name }}" required autofocus>
+  <select name="department" class="form-control" >
+  {{ range .Departments }}
+  <option value="{{ .Id }}">{{ .Name }}</option>
+  {{ end }}
+</select>
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="canEdit"  value="1">
+    维护内容
+  </label>
+</div>
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="canBroweAll" value="2">
+    查看单据
+  </label>
+</div>
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="canEditAll" value="4">
+    维护单据
+  </label>
+</div>
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="canAdmin" value="8">
+    系统管理
+  </label>
+</div>
+  <br/>
+  <button class="btn btn-lg btn-primary btn-block" type="submit">修改</button>
+  <br/>
+</form>
+<script src="/static/js/jquery-2.1.1.min.js"></script>
+<script>
+$(function(){
+    $('.datepicker').datepicker();
+}
+});
+</script>
+{{ end }}

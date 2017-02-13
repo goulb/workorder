@@ -1,0 +1,160 @@
+{{ define "content" }}
+
+<form class="form-signin center" role="form" action="/orders/create" method="post">
+  <h2 class="form-signin-heading">
+    <i class="fa fa-comments-o">
+      添加任务单
+    </i>
+  </h2>
+  <div class="input-group">
+  <span class="input-group-addon" id="basic-addon2">用车单位</span>
+    <select name="department" class="form-control">
+      {{ range .Depts }}
+      <option value="{{ .Id }}">{{ .Name }}</option>
+      {{ end }}
+    </select>
+  </div>
+  <div class='input-group date' id='datetimepicker1'>
+    <span class="input-group-addon" id="basic-addon2">开始日期</span>
+    <input type='text' name="datebegin" class="form-control" />
+  </div>
+  <div class='input-group date' id='datetimepicker2'>
+    <span class="input-group-addon" id="basic-addon2">结束日期</span>
+    <input type='text' name="dateend" class="form-control" />
+  </div>
+  <div class="input-group">
+    <span class="input-group-addon" id="basic-addon2"><a id="cartype" href="#" data-toggle="modal" data-target="#myModal">车型吨位</a></span>
+    <input type="text" name="cartype" class="form-control" placeholder="Recipient's username" aria-describedby="basic-addon2">
+  </div>
+	<div class="input-group">  
+    <span class="input-group-addon" id="basic-addon2">用途类别</span>
+    <select name="usefor" class="form-control">
+      <option value="0">生产用车</option>
+      <option value="1">检修用车</option>
+    </select>
+  </div>
+  <div class="input-group">  
+    <span class="input-group-addon" id="basic-addon2">派车单位</span>
+    <select name="provider" class="form-control">
+      {{ range .Providers }}
+      <option value="{{ .Id }}">{{ .Name }}</option>
+      {{ end }}
+    </select>
+  </div>
+  <div class='input-group'>
+    <span class="input-group-addon" id="basic-addon2">车辆牌号</span>
+    <input type='text' name="carnum" class="form-control" />
+  </div>
+  <br/>
+  <button class="btn btn-lg btn-primary btn-block" type="submit">添加</button>
+  <br/>
+</form>
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">选择车型吨位</h4>
+      </div>
+      
+      <div class="modal-body">
+        <p id="weight">
+        <span style="margin-left: 15px;margin-right: 15px;">吨位</span>
+        </p>
+        <p id="type">
+        <span style="margin-left: 15px;margin-right: 15px;">车型</span>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+        <button id="modalok" type="button" class="btn btn-primary">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+  cartypes=[
+    {{range .CarTypes}}
+    {
+      weight:{{.Weight}},
+      type:"{{.TypeName}}",
+    },  
+    {{ end }}
+  ];
+  weights=[];
+  types=[];
+  for(c in cartypes){
+    var i;
+    for(i in weights){
+      if(weights[i]==cartypes[c].weight){
+        break;
+      }
+    }
+    if(weights[i]!=cartypes[c].weight){
+      weights.push(cartypes[c].weight);
+    }
+
+    for(i in types){
+      if(types[i]==cartypes[c].type){
+        break;
+      }
+    } 
+    if(types[i]!=cartypes[c].type){
+      types.push(cartypes[c].type);
+    }   
+  }
+  weights.sort();
+  types.sort();
+  function cartypeclick(){
+    k=$(this).parent().prop("id");
+    v= k=="weight"?"type":"weight"
+
+    oldselect=$("#"+k+">a.btn-info").text();
+    
+    $("#"+k+">a").addClass("btn-default");
+    $("#"+k+">a").removeClass("btn-info");
+    if($(this).text()!=oldselect){
+      $(this).addClass("btn-info");
+      $(this).removeClass("btn-default");
+      $("#"+v+">a").addClass("disabled");
+      for(i in cartypes){
+        if(cartypes[i][k]==$(this).text()){
+          objs=$("#"+v+">a");
+          objs.filter(function(a){return objs[a].text==cartypes[i][v];}).removeClass("disabled");  
+        }
+      }
+    }else{
+      $("#"+v+">a").removeClass("disabled")
+    }  
+  }
+  
+  $(document).ready(function(){
+    for(t in types){
+      $("#type").append('<a href="#" class="btn btn-default btn-sm" role="link">'+types[t]+'</a> ');
+    }
+    for(w in weights){
+      $("#weight").append('<a href="#" class="btn btn-default btn-sm" role="button">'+weights[w]+'</a> ');
+    }
+    $('#datetimepicker1').datetimepicker({format: 'YYYY-MM-DD',locale: 'zh-cn',defaultDate:  $.now()});
+    $('#datetimepicker2').datetimepicker({format: 'YYYY-MM-DD',locale: 'zh-cn',defaultDate:  $.now()});
+    $("#datetimepicker1").on("dp.change", function (e) {
+      $('#datetimepicker2').data("DateTimePicker").minDate(e.date);
+    });
+    $("#datetimepicker2").on("dp.change", function (e) {
+      $('#datetimepicker1').data("DateTimePicker").maxDate(e.date);
+    });
+    $("#type>a").click(cartypeclick);
+    $("#weight>a").click(cartypeclick);
+    $("#modalok").click(function(){
+      w=$("#weight>a.btn-info").text();
+      t=$("#type>a.btn-info").text();
+      if(w!="" && type!=""){
+        $(":text[name='cartype']").prop("value",w+"T"+t);
+        $("#myModal").modal("hide");
+      }
+    });
+  });
+</script>
+
+{{ end }}

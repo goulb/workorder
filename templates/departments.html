@@ -1,0 +1,26 @@
+{{ define "content" }}
+
+<p class="lead">
+  <a href="/departments/new">增加用车单位</a> 
+</p>
+<table class="table table-striped">
+<thead>
+      <tr>
+        <th>单位名称</th>
+        <th style='text-align: right;'>操作</th>
+        
+      </tr>
+    </thead>
+    <tbody>
+{{ range . }}
+<tr>
+<td>{{ .Name }}</td>
+<td style='text-align: right;'>
+<a href="/departments/edit?id={{ .Id }}"><i class="fa fa-edit"></i></a>
+<a href="/departments/delete?id={{ .Id }}"><i class="fa fa-trash"></i></a>
+</td>
+</tr>
+{{ end }}
+</tbody>
+<table>
+{{ end }}

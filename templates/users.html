@@ -1,0 +1,39 @@
+{{ define "content" }}
+
+<p class="lead">
+  <a href="/users/new">增加用户</a> 
+</p>
+
+<table class="table table-striped">
+<thead>
+      <tr>
+        <th>用户姓名</th>
+        <th>单位</th>
+	<th>权限</th>
+	<th>密码状态</th>
+        <th style='text-align: right;'>操作</th>
+        
+      </tr>
+    </thead>
+    <tbody>
+{{ range . }}
+<tr>
+<td>{{ .Name }}</td>
+<td>{{ .Department }}</td>
+<td>
+{{ range .Privileges }}
+<span class="label label-info">{{ . }}</span>
+{{ end }}
+</td>
+<td>{{ .PasswordStatus }}</td>
+<td style='text-align: right;'>
+<a  href="/users/edit?id={{ .Id }}"><i class="fa fa-edit "></i></a>
+<a  href="/departments/delete?id={{ .Id }}"><i class="fa fa-trash"></i></a>
+<a  href="/password/reset?id={{ .Id }}"><i class="fa fa-undo"></i></a>
+</td>
+</tr>
+{{ end }}
+</tbody>
+<table>
+
+{{ end }}

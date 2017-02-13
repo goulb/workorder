@@ -1,0 +1,134 @@
+{{ define "content" }}
+<div id="tabledata"  class="hidden-xs" style="display:none">
+  <div id="toolbar">
+    <div class="form-inline" role="form">
+      <div class="form-group">
+        <a class="btn btn-primary" href="/orders/new">
+          <i class="fa fa-plus" title="Align Left"></i>
+          添加
+        </a>
+        <a class="btn btn-primary" href="#">
+          <i class="fa fa-print" title="Align Left"></i> 
+          打印
+        </a>
+      </div>            
+    </div>
+  </div>
+  <table id="table"
+    data-toolbar="#toolbar"
+    data-pagination="true"
+    data-search="true"
+    data-show-refresh="true"
+    data-show-columns="true"
+    data-detail-view="true"
+    data-detail-formatter="detailFormatter">
+    <thead>
+      <tr>
+      <th data-field="state" data-checkbox="true"></th>
+      <th data-field="num">单号</th>
+      <th data-field="dept">用车单位</th>
+      <th data-field="date">起止日期</th>		
+      <th data-field="cartype">车型吨位</th>
+      <th data-field="provider">派车单位</th>
+      <th data-field="carnum">车牌号</th>
+      <th data-field="createdat">单据创建时间</th>
+      <th data-field="option"></th>
+      </tr>
+    </thead>
+  </table>
+</div>
+<div id="listdata"  class="visible-xs-block">
+  <div class="input-group lead">
+    <div>
+      <input type="text" id="search" class="form-control" placeholder="Search">
+    </div>
+    <div class="input-group-btn">
+      <a class="btn btn-default" href="#" id="search">
+        <i class="fa fa-search" title="搜索"></i>
+      </a>
+      <a class="btn btn-default" href="/orders/new">
+        <i class="fa fa-plus" title="添加任务单"></i>
+      </a>
+    </div>
+  </div>
+  <div id="panels"></div>
+</div>
+<div style="display:none">
+  <div id="panel" class="panel panel-default">
+    <div class="panel-heading">
+      <span class="lead"> 
+        <i class="fa fa-truck"></i>
+      </span>
+    </div>
+    <div class="panel-body">
+      <div class="pull-right">
+        <a class="delete" href="#">
+          <i class="fa fa-trash" title="删除"></i>
+        </a>
+        <a href="#">Read more</a>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript" >
+var data = [
+		{{ range . }}
+		{
+      id:{{.Id}},
+		 	num:{{.Num}},
+			dept:"{{.Department}}",
+			date:"{{.DateBegin}} - {{.DateEnd}}",
+			cartype:"{{.CarType}}",
+			provider:"{{.Provider}}",
+			carnum:"{{.CarNum}}",
+			createdat:"{{.CreatedAt}}",
+      option:'<a href="/orders/edit?id={{.Id}}"><i class="fa fa-edit" title="修改"></i></a>\
+        <a href="/orders/delete?id={{.Id}}"><i class="fa fa-trash" title="删除"></i></a>\
+        <a href="/orders/submit?id={{.Id}}"><i class="fa fa-upload" title="提交"></i></a>\
+        <a href="/orders/lock?id={{.Id}}"><i class="fa fa-lock" title="锁定"></i></a>',
+		},	
+	{{ end }}
+	];
+function detailFormatter(index, row) {
+  var html = [];
+  html.push('修改删除提交锁定')
+  $.each(row, function (key, value) {
+      html.push('<p><b>' + key + ':</b> ' + value + '</p>');
+  });
+  return html.join('');
+}
+function showdata(data){
+  p=$("#panel").clone();
+	p.prop("id",data.id);
+	$("#panels").append(p);
+	p.find("span.lead").append(data.num);
+	p.find("div.panel-body").prepend(data.dept+" "+data.date+" "+data.cartype+" "+data.provider+" "+data.carnum+" "+data.createdat);
+  p.find("a.delete").prop("href","/orders/delete?id="+data.id);
+}
+$(document).ready(function(){
+	
+  for (i in data){
+    showdata(data[i])
+	}
+  
+  $("a#search").click(function(){
+    $("#panels").children(".panel").remove();
+    for (i in data){
+      s="";
+    	for(p in data[i]){
+        if(p!=0){
+          s=s+" "+data[i][p];
+        } 
+      }
+    	subs=$("input#search").prop("value");
+    	if(s.indexOf(subs)>0 || subs==""){
+            showdata(data[i]);
+      }
+    }
+  });
+  $("#table").bootstrapTable({data: data});
+  $("#tabledata").show();     
+    
+});
+</script>
+{{ end }}

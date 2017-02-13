@@ -1,0 +1,44 @@
+{{ define "content" }}
+
+<form class="form-signin center" role="form" action="/users/create" method="post">
+  <h2 class="form-signin-heading">
+    <i class="fa fa-comments-o">
+      添加用户
+    </i>
+  </h2>
+  <input type="name" name="name" class="form-control" placeholder="用户名称" required autofocus>
+  <select name="department" class="form-control">
+  {{ range . }}
+  <option value="{{ .Id }}">{{ .Name }}</option>
+  {{ end }}
+</select>
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="canEdit"  value="1">
+    维护内容
+  </label>
+</div>
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="canBroweAll" value="2">
+    查看单据
+  </label>
+</div>
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="canEditAll" value="4">
+    维护单据
+  </label>
+</div>
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="canAdmin" value="8">
+    系统管理
+  </label>
+</div>
+  <br/>
+  <button class="btn btn-lg btn-primary btn-block" type="submit">添加</button>
+  <br/>
+</form>
+
+{{ end }}
