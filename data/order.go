@@ -138,10 +138,14 @@ func (order *Order) CreateWorkItem(work string, unit int, quantity float32) (wi 
 	_, err = Db.Exec(`insert into workitems(order_id,work,unit,quantity) 
 	values($1,$2,$3,$4)`, order.Id, work, unit, quantity)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
-	err = Db.QueryRow(`select rowid,work,unit,quantity
+	err = Db.QueryRow(`select rowid,order_id,work,unit,quantity
 		from workitems where rowid in (select last_insert_rowid())`,
 	).Scan(&wi.Id, &wi.OrderId, &wi.Work, &wi.Unit, &wi.Quantity)
+	if err != nil {
+		fmt.Println(err)
+	}
 	return
 }

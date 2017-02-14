@@ -51,7 +51,7 @@ func main() {
 	mux.HandleFunc("/password/reset", resetPassword)
 	mux.HandleFunc("/workitems", workitems)
 	mux.HandleFunc("/workitems/new", newWorkitem)
-	mux.HandleFunc("/workitems/update", createWorkitem)
+	mux.HandleFunc("/workitems/create", createWorkitem)
 	mux.HandleFunc("/workitems/update", updateWorkitem)
 	for key, _ := range adminHandles {
 		mux.HandleFunc(key, admin)
