@@ -35,40 +35,20 @@ func orders(writer http.ResponseWriter, request *http.Request) {
 	if curUser.Privileges&data.CanEditAll == data.CanEditAll ||
 		curUser.Privileges&data.CanBroweAll == data.CanBroweAll {
 		orders, _ = data.Orders()
-		fmt.Println(0, orders)
 	} else {
 		orders, _ = data.OrdersByDepartmentID(curUser.DepartmentId)
-		fmt.Println(1, orders)
 	}
 	var dos []displayOrder
 
-	deptmap := map[int]string{}
-	for _, dept := range depts {
-		deptmap[dept.Id] = dept.Name
-	}
-	providermap := map[int]string{}
-	for _, prov := range provs {
-		providermap[prov.Id] = prov.Name
-	}
-	cartypemap := map[int]string{}
-	for _, cartype := range cartypes {
-		s := ""
-		if cartype.Weight == 0 {
-			s = cartype.TypeName
-		} else {
-			s = fmt.Sprintf("%dT%s", cartype.Weight, cartype.TypeName)
-		}
-		cartypemap[cartype.Id] = s
-	}
 	for _, order := range orders {
 		do := displayOrder{
 			Id:         order.Id,
 			Num:        fmt.Sprintf("GXJCWL%07d", 20000+order.Id),
-			Department: deptmap[order.DepartmentId],
+			Department: deptMap()[order.DepartmentId],
 			DateBegin:  order.DateBegin,
 			DateEnd:    order.DateEnd,
-			Provider:   providermap[order.ProviderId],
-			CarType:    cartypemap[order.CarTypeId],
+			Provider:   providerMap()[order.ProviderId],
+			CarType:    cartypeMap()[order.CarTypeId],
 			CarNum:     order.CarNum,
 			CreatedAt:  order.CreatedAt.Format("2006-01-02 15:04:05"),
 			UseFor:     useforstr[order.UseFor],
@@ -91,16 +71,8 @@ func orders(writer http.ResponseWriter, request *http.Request) {
 	generateHTML(writer, info, "layout", navbar, "orders")
 }
 
-func newOrder(writer http.ResponseWriter, request *http.Request) {
-	curUser, err := getUserBySession(writer, request)
-	if err != nil {
-		http.Redirect(writer, request, "/login", 302)
-		return
-	}
-	if curUser.Privileges&data.CanEditAll != data.CanEditAll {
-		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户没有添加任务单权限！"), 302)
-		return
-	}
+func newOrder(writer http.ResponseWriter, request *http.Request, user data.User) {
+
 	info := struct {
 		Depts     []data.Department
 		Providers []data.Provider
@@ -112,16 +84,8 @@ func newOrder(writer http.ResponseWriter, request *http.Request) {
 	}
 	generateHTML(writer, info, "login.layout", "public.navbar", "neworder")
 }
-func editOrder(writer http.ResponseWriter, request *http.Request) {
-	curUser, err := getUserBySession(writer, request)
-	if err != nil {
-		http.Redirect(writer, request, "/login", 302)
-		return
-	}
-	if curUser.Privileges&data.CanEditAll != data.CanEditAll {
-		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户没有添加任务单权限！"), 302)
-		return
-	}
+func editOrder(writer http.ResponseWriter, request *http.Request, user data.User) {
+
 	vals := request.URL.Query()
 	orderid := 0
 	fmt.Sscan(vals.Get("id"), &orderid)
@@ -136,50 +100,51 @@ func editOrder(writer http.ResponseWriter, request *http.Request) {
 		Providers []data.Provider
 		CarTypes  []data.CarType
 		OrderNum  string
+		CarType   string
 		Order     data.Order
 	}{
 		depts,
 		provs,
 		cartypes,
 		fmt.Sprintf("GXJCWL%07d", 20000+order.Id),
+		cartypeMap()[order.CarTypeId],
 		order,
 	}
 	generateHTML(writer, info, "login.layout", "public.navbar", "editorder")
 }
+func deleteOrder(writer http.ResponseWriter, request *http.Request, user data.User) {
+	fmt.Fprintln(writer, user)
+}
 
-func deleteOrder(writer http.ResponseWriter, request *http.Request) {
-	curUser, err := getUserBySession(writer, request)
-	if err != nil {
-		http.Redirect(writer, request, "/login", 302)
-		return
-	}
-	if curUser.Privileges&data.CanEditAll != data.CanEditAll {
-		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户没有添加任务单权限！"), 302)
-		return
-	}
+func updateOrder(writer http.ResponseWriter, request *http.Request, user data.User) {
+	request.ParseForm()
+
+	var id, deptid, providerid, usefor int
+	fmt.Sscan(request.PostFormValue("id"), &id)
+	fmt.Sscan(request.PostFormValue("department"), &deptid)
+	fmt.Sscan(request.PostFormValue("provider"), &providerid)
+	fmt.Sscan(request.PostFormValue("usefor"), &usefor)
+	datebegin := request.PostFormValue("datebegin")
+	dateend := request.PostFormValue("dateend")
+	cartypeStr := request.PostFormValue("cartype")
+	carnum := request.PostFormValue("carnum")
+
+	order, _ := data.OrderByID(id)
+	fmt.Println(order)
+	order.DepartmentId = deptid
+	order.DateBegin = datebegin
+	order.DateEnd = dateend
+	order.ProviderId = providerid
+	order.CarTypeId = carTypeIDByString(cartypeStr)
+	order.UseFor = usefor
+	order.CarNum = carnum
+	fmt.Println(order)
+	order.Update()
 
 	http.Redirect(writer, request, "/orders", 302)
 }
-func updateOrder(writer http.ResponseWriter, request *http.Request) {
+func createOrder(writer http.ResponseWriter, request *http.Request, user data.User) {
 
-	dept := data.Department{Name: request.PostFormValue("name")}
-	err := dept.Create()
-	if err != nil {
-		fmt.Println(err)
-	}
-	depts, err = data.Departments()
-	http.Redirect(writer, request, "/orders", 302)
-}
-func createOrder(writer http.ResponseWriter, request *http.Request) {
-	curUser, err := getUserBySession(writer, request)
-	if err != nil {
-		http.Redirect(writer, request, "/login", 302)
-		return
-	}
-	if curUser.Privileges&data.CanEditAll != data.CanEditAll {
-		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户没有添加任务单权限！"), 302)
-		return
-	}
 	request.ParseForm()
 	var deptid, providerid, usefor int
 	fmt.Sscan(request.PostFormValue("department"), &deptid)
@@ -189,25 +154,117 @@ func createOrder(writer http.ResponseWriter, request *http.Request) {
 	dateend := request.PostFormValue("dateend")
 	cartypeStr := request.PostFormValue("cartype")
 	carnum := request.PostFormValue("carnum")
-	var cartypeid int
+
+	order := data.Order{DepartmentId: deptid, DateBegin: datebegin,
+		DateEnd: dateend, ProviderId: providerid,
+		CarTypeId: carTypeIDByString(cartypeStr),
+		UseFor:    usefor, CarNum: carnum}
+	order.Create()
+
+	http.Redirect(writer, request, "/orders", 302)
+}
+func changeOrder(hf func(http.ResponseWriter, *http.Request, data.User)) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		curUser, err := getUserBySession(writer, request)
+		if err != nil {
+			http.Redirect(writer, request, "/login", 302)
+			return
+		}
+		if curUser.Privileges&data.CanEditAll != data.CanEditAll {
+			http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户没有添加任务单权限！"), 302)
+			return
+		}
+		hf(writer, request, curUser)
+	}
+}
+func cartypeMap() (cartypemap map[int]string) {
+	cartypemap = map[int]string{}
+	for _, cartype := range cartypes {
+		s := ""
+		if cartype.Weight == 0 {
+			s = cartype.TypeName
+		} else {
+			s = fmt.Sprintf("%dT%s", cartype.Weight, cartype.TypeName)
+		}
+		cartypemap[cartype.Id] = s
+	}
+	return
+}
+func deptMap() (deptmap map[int]string) {
+	deptmap = map[int]string{}
+	for _, dept := range depts {
+		deptmap[dept.Id] = dept.Name
+	}
+	return
+}
+func providerMap() (providermap map[int]string) {
+	providermap = map[int]string{}
+	for _, prov := range provs {
+		providermap[prov.Id] = prov.Name
+	}
+	return
+}
+func carTypeIDByString(s string) (cartypeid int) {
 	for _, ct := range cartypes {
-		if fmt.Sprintf("%dT%s", ct.Weight, ct.TypeName) == cartypeStr {
+		if fmt.Sprintf("%dT%s", ct.Weight, ct.TypeName) == s {
 			cartypeid = ct.Id
 		}
 	}
 	if cartypeid == 0 {
 		var w int
 		var t string
-		fmt.Sscanf(cartypeStr, "%dT%s", &w, &t)
+
+		fmt.Sscanf(s, "%dT%s", &w, &t)
+		if t == "" {
+			t = s
+		}
 		ct := data.CarType{Weight: w, TypeName: t}
 		ct.Create()
 		cartypeid = ct.Id
 	}
-
-	order := data.Order{DepartmentId: deptid, DateBegin: datebegin,
-		DateEnd: dateend, ProviderId: providerid, CarTypeId: cartypeid,
-		UseFor: usefor, CarNum: carnum}
-	order.Create()
-
-	http.Redirect(writer, request, "/orders", 302)
+	return
+}
+func workitems(writer http.ResponseWriter, request *http.Request) {
+	generateHTML(writer, nil, "workitems")
+}
+func updateWorkitem(writer http.ResponseWriter, request *http.Request) {
+	generateHTML(writer, nil, "workitems")
+}
+func createWorkitem(writer http.ResponseWriter, request *http.Request) {
+	request.ParseForm()
+	var orderid, unit int
+	var quantity float32
+	fmt.Sscan(request.PostFormValue("orderid"), &orderid)
+	fmt.Sscan(request.PostFormValue("unit"), &unit)
+	fmt.Sscan(request.PostFormValue("quantity"), &quantity)
+	work := request.PostFormValue("work")
+	order, err := data.OrderByID(orderid)
+	if err != nil {
+		return
+	}
+	order.CreateWorkItem(work, unit, quantity)
+	http.Redirect(writer, request, "/workitems", 302)
+}
+func newWorkitem(writer http.ResponseWriter, request *http.Request) {
+	vals := request.URL.Query()
+	id := 0
+	fmt.Sscan(vals.Get("pid"), &id)
+	order, err := data.OrderByID(id)
+	if err != nil {
+		fmt.Println(err)
+	}
+	info := struct {
+		Order      data.Order
+		OrderNum   string
+		Department string
+		Provider   string
+		Cartype    string
+	}{
+		order,
+		fmt.Sprintf("GXJCWL%07d", 20000+order.Id),
+		deptMap()[order.DepartmentId],
+		providerMap()[order.ProviderId],
+		cartypeMap()[order.CarTypeId],
+	}
+	generateHTML(writer, info, "login.layout", "public.navbar", "newworkitem")
 }

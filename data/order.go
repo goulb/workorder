@@ -18,6 +18,13 @@ type Order struct {
 	Locked       bool
 	CreatedAt    time.Time
 }
+type WorkItem struct {
+	Id       int
+	OrderId  int
+	Work     string
+	Unit     int
+	Quantity float32
+}
 
 func (order *Order) Create() (err error) {
 	_, err = Db.Exec(`insert into orders(
@@ -103,6 +110,38 @@ func OrdersByDepartmentID(id int) (orders []Order, err error) {
 		order.CreatedAt, err = time.Parse(timeformat, s)
 		orders = append(orders, order)
 	}
-	fmt.Println(id, orders)
+
+	return
+}
+func (order *Order) Update() (err error) {
+	boolmap := map[bool]int{false: 0, true: 1}
+	_, err = Db.Exec(`update orders
+		set department_id=$1,
+		date_begin=$2,
+		date_end=$3,
+		provider_id=$4,
+		cartype_id=$5,
+		usefor=$6,
+		carnum=$7,
+		submit=$8,
+		locked=$9,
+		careat_at=$10 where rowid=$11`,
+		order.DepartmentId, order.DateBegin, order.DateEnd, order.ProviderId,
+		order.CarTypeId, order.UseFor, order.CarNum, boolmap[order.Submit],
+		boolmap[order.Locked], order.CreatedAt.Format(timeformat), order.Id)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return
+}
+func (order *Order) CreateWorkItem(work string, unit int, quantity float32) (wi WorkItem, err error) {
+	_, err = Db.Exec(`insert into workitems(order_id,work,unit,quantity) 
+	values($1,$2,$3,$4)`, order.Id, work, unit, quantity)
+	if err != nil {
+		return
+	}
+	err = Db.QueryRow(`select rowid,work,unit,quantity
+		from workitems where rowid in (select last_insert_rowid())`,
+	).Scan(&wi.Id, &wi.OrderId, &wi.Work, &wi.Unit, &wi.Quantity)
 	return
 }

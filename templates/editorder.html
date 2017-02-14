@@ -1,11 +1,12 @@
 {{ define "content" }}
 
-<form class="form-signin center" role="form" action="/orders/create" method="post">
+<form class="form-signin center" role="form" action="/orders/update" method="post">
   <h2 class="form-signin-heading">
     <i class="fa fa-comments-o">
       修改任务单
     </i>
   </h2>
+  <input type="hidden" name="id" value="{{ .Order.Id }}">
   <div class='input-group'>
     <span class="input-group-addon" id="basic-addon2">任务单号</span>
     <input type='text' name="ordernum" class="form-control" disabled="disabled" />
@@ -80,6 +81,7 @@
 <script type="text/javascript">
   ordernum={{.OrderNum}}
   order={{.Order}}
+  cartype={{.CarType}}
   cartypes=[
     {{range .CarTypes}}
     {
@@ -160,7 +162,13 @@
         $("#myModal").modal("hide");
       }
     });
-    $("input[name='ordernum'").prop("value",ordernum);
+    $("input[name='ordernum']").prop("value",ordernum);
+    $("select[name='department']").val(order.DepartmentId)
+    $("select[name='provider']").val(order.ProviderId)
+    $("input[name='carnum']").val(order.CarNum)
+    $("input[name='datebegin']").val(order.DateBegin)
+    $("input[name='dateend']").val(order.DateEnd)
+    $("input[name='cartype']").val(cartype)
   });
 </script>
 

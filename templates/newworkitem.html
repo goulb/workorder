@@ -1,0 +1,36 @@
+{{ define "content" }}
+
+<form class="form-signin center" role="form" action="/orders/update" method="post">
+  <h3 class="form-signin-heading">
+    <i class="fa fa-comments-o">
+      作业内容
+    </i>
+  </h3>
+  <input type="hidden" name="orderid" value="{{ .Order.Id }}">
+  <span class="form-control" data-toggle="tooltip" data-placement="bottom" 
+  title="{{ .Department }} {{ .Order.DateBegin }} - {{ .Order.DateEnd }} {{ .Cartype }}">
+  任务单号 {{.OrderNum}}
+  </span>  
+  <span class="form-control">作业时段及内容</span>
+  <textarea class="form-control" rows="2" name="work"></textarea>
+  
+  <div class='input-group'>
+    <span class="input-group-addon" id="basic-addon2">作业地点</span>
+    <input type='text' name="place" class="form-control" />
+  </div>
+  <div class="input-group">  
+    <span class="input-group-addon" id="basic-addon2">计量单位</span>
+    <select name="unit" class="form-control">
+      <option value="0">台班</option>
+      <option value="1">吨位</option>
+    </select>
+  </div>
+  <div class='input-group'>
+    <span class="input-group-addon" id="basic-addon2">作业量</span>
+    <input type='text' name="quantity" class="form-control" />
+  </div>
+  <br/>
+  <button class="btn btn-lg btn-primary btn-block" type="submit">修改</button>
+  <br/>
+</form>
+{{ end }}

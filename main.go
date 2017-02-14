@@ -13,14 +13,6 @@ var cartypes []data.CarType
 
 var adminHandles map[string]func(http.ResponseWriter, *http.Request)
 
-/*const adminHandles = map[string]func(http.ResponseWriter, *http.Request){
-	"users":         users,
-	"users/new":     newUser,
-	"/users/create": createUser,
-	"/users/edit":   editUser,
-	"/users/update": updateUser,
-}*/
-
 func main() {
 	p("WorkOrder", version(), "started at", config.Address)
 	adminHandles = map[string]func(http.ResponseWriter, *http.Request){
@@ -49,14 +41,18 @@ func main() {
 	mux.HandleFunc("/login", login)
 	mux.HandleFunc("/logout", logout)
 	mux.HandleFunc("/orders", orders)
-	mux.HandleFunc("/orders/new", newOrder)
-	mux.HandleFunc("/orders/create", createOrder)
-	mux.HandleFunc("/orders/update", updateOrder)
-	mux.HandleFunc("/orders/edit", editOrder)
-	mux.HandleFunc("/orders/delete", deleteOrder)
+	mux.HandleFunc("/orders/new", changeOrder(newOrder))
+	mux.HandleFunc("/orders/create", changeOrder(createOrder))
+	mux.HandleFunc("/orders/update", changeOrder(updateOrder))
+	mux.HandleFunc("/orders/edit", changeOrder(editOrder))
+	mux.HandleFunc("/orders/delete", changeOrder(deleteOrder))
 	mux.HandleFunc("/password", changePassword)
 	mux.HandleFunc("/password/update", updatePassword)
 	mux.HandleFunc("/password/reset", resetPassword)
+	mux.HandleFunc("/workitems", workitems)
+	mux.HandleFunc("/workitems/new", newWorkitem)
+	mux.HandleFunc("/workitems/update", createWorkitem)
+	mux.HandleFunc("/workitems/update", updateWorkitem)
 	for key, _ := range adminHandles {
 		mux.HandleFunc(key, admin)
 	}
