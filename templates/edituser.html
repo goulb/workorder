@@ -3,7 +3,7 @@
 <form class="form-signin center" role="form" action="/users/update" method="post">
   <h2 class="form-signin-heading">
     <i class="fa fa-comments-o">
-      修改用户
+      <span id="title">修改用户</span>
     </i>
   </h2>
   <input type="hidden" name="id" value="{{ .User.Id }}">
@@ -38,14 +38,25 @@
   </label>
 </div>
   <br/>
-  <button class="btn btn-lg btn-primary btn-block" type="submit">修改</button>
+  <button class="btn btn-lg btn-primary btn-block" type="submit">确定</button>
   <br/>
 </form>
-<script src="/static/js/jquery-2.1.1.min.js"></script>
 <script>
 $(function(){
-    $('.datepicker').datepicker();
-}
+  userid={{.User.Id}};
+  if(userid){
+    $("span#title").text("修改用户");
+
+    privileges=[1,2,4,8];
+    privs={{.User.Privileges}};
+    for (i in privileges){
+      can=privileges[i]& privs;
+      $("input[value="+can+"]").prop("checked",true);
+    }
+  }else{
+    $("span#title").text("添加用户");
+  }
+  $("select[name='department']").val("{{ .User.DepartmentId }}");
 });
 </script>
 {{ end }}

@@ -159,8 +159,14 @@ func resetPassword(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 func newUser(writer http.ResponseWriter, request *http.Request) {
-
-	generateHTML(writer, depts, "login.layout", "public.navbar", "newuser")
+	items := struct {
+		User        data.User
+		Departments []data.Department
+	}{
+		User:        data.User{},
+		Departments: depts,
+	}
+	generateHTML(writer, items, "login.layout", "public.navbar", "edituser")
 }
 func editUser(writer http.ResponseWriter, request *http.Request) {
 	vals := request.URL.Query()

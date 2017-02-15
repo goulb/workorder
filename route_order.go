@@ -225,7 +225,23 @@ func carTypeIDByString(s string) (cartypeid int) {
 	return
 }
 func workitems(writer http.ResponseWriter, request *http.Request) {
-	generateHTML(writer, nil, "workitems")
+	vals := request.URL.Query()
+	id := 0
+	fmt.Sscan(vals.Get("pid"), &id)
+	order, err := data.OrderByID(id)
+	workItems, err := order.WorkItems()
+	if err != nil {
+		http.Redirect(writer, request,
+			fmt.Sprintf("/err?msg=%s", fmt.Sprint(err)), 302)
+	}
+	info := struct {
+		OrderID   int
+		WorkItems []data.WorkItem
+	}{
+		id,
+		workItems,
+	}
+	generateHTML(writer, info, "workitems")
 }
 func updateWorkitem(writer http.ResponseWriter, request *http.Request) {
 	generateHTML(writer, nil, "workitems")
@@ -238,11 +254,13 @@ func createWorkitem(writer http.ResponseWriter, request *http.Request) {
 	fmt.Sscan(request.PostFormValue("unit"), &unit)
 	fmt.Sscan(request.PostFormValue("quantity"), &quantity)
 	work := request.PostFormValue("work")
+	place := request.PostFormValue("place")
 	order, err := data.OrderByID(orderid)
 	if err != nil {
+		fmt.Fprintln(writer, err)
 		return
 	}
-	order.CreateWorkItem(work, unit, quantity)
+	order.CreateWorkItem(work, place, unit, quantity)
 	http.Redirect(writer, request, "/workitems", 302)
 }
 func newWorkitem(writer http.ResponseWriter, request *http.Request) {

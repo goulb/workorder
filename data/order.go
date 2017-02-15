@@ -22,6 +22,7 @@ type WorkItem struct {
 	Id       int
 	OrderId  int
 	Work     string
+	Place    string
 	Unit     int
 	Quantity float32
 }
@@ -134,18 +135,34 @@ func (order *Order) Update() (err error) {
 	}
 	return
 }
-func (order *Order) CreateWorkItem(work string, unit int, quantity float32) (wi WorkItem, err error) {
-	_, err = Db.Exec(`insert into workitems(order_id,work,unit,quantity) 
-	values($1,$2,$3,$4)`, order.Id, work, unit, quantity)
+func (order *Order) CreateWorkItem(work string, place string, unit int,
+	quantity float32) (wi WorkItem, err error) {
+	fmt.Println(order.Id, work, unit, quantity)
+	_, err = Db.Exec(`insert into workitems(order_id,work,place,unit,quantity) 
+	values($1,$2,$3,$4,$5)`, order.Id, work, place, unit, quantity)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	err = Db.QueryRow(`select rowid,order_id,work,unit,quantity
+	err = Db.QueryRow(`select rowid,order_id,work,place,unit,quantity
 		from workitems where rowid in (select last_insert_rowid())`,
-	).Scan(&wi.Id, &wi.OrderId, &wi.Work, &wi.Unit, &wi.Quantity)
+	).Scan(&wi.Id, &wi.OrderId, &wi.Work, &wi.Place, &wi.Unit, &wi.Quantity)
 	if err != nil {
 		fmt.Println(err)
+	}
+	return
+}
+func (order *Order) WorkItems() (workitems []WorkItem, err error) {
+	rows, err := Db.Query(`select rowid,order_id,work,place,unit,quantity
+		from workitems where order_id=$1`, order.Id)
+	if err != nil {
+		fmt.Println(err)
+	}
+	for rows.Next() {
+		wi := WorkItem{}
+		rows.Scan(&wi.Id, &wi.OrderId, &wi.Work, &wi.Place, &wi.Unit,
+			&wi.Quantity)
+		workitems = append(workitems, wi)
 	}
 	return
 }

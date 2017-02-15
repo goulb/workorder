@@ -103,7 +103,7 @@ function detailFormatter(index, row) {
   $.each(row, function (key, value) {
       html.push('<p><b>' + key + ':</b> ' + value + '</p>');
   });*/
-  $.get("/workitems?id="+row["id"], function(result){
+  $.get("/workitems?pid="+row["id"], function(result){
     $("div#"+row["id"]).html(result);
     $("div#"+row["id"]).find("table").bootstrapTable();
   });
