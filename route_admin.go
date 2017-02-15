@@ -84,7 +84,7 @@ func createDepartment(writer http.ResponseWriter, request *http.Request) {
 	dept := data.Department{Name: request.PostFormValue("name")}
 	err := dept.Create()
 	if err != nil {
-		fmt.Println(err)
+		danger(err)
 	}
 	depts, err = data.Departments()
 	http.Redirect(writer, request, "/departments", 302)
@@ -92,17 +92,50 @@ func createDepartment(writer http.ResponseWriter, request *http.Request) {
 func providers(writer http.ResponseWriter, request *http.Request) {
 	provs, err := data.Providers()
 	if err != nil {
-		fmt.Println(err)
+		danger(err)
 		return
 	}
 	generateHTML(writer, provs, "layout", "admin.navbar", "providers")
 }
-func newProvider(writer http.ResponseWriter, request *http.Request) {
-	t := parseTemplateFiles("login.layout", "public.navbar", "newprovider")
-	t.Execute(writer, nil)
+func editProvider(writer http.ResponseWriter, request *http.Request) {
+	vals := request.URL.Query()
+	provider := data.Provider{}
+	id := 0
+	fmt.Sscanln(vals.Get("id"), &id)
+	provider, _ = data.ProviderByID(id)
+
+	generateHTML(writer, provider, "login.layout", "public.navbar",
+		"editprovider")
+}
+func updateProvider(writer http.ResponseWriter, request *http.Request) {
+	request.ParseForm()
+	id := 0
+	fmt.Sscan(request.PostFormValue("id"), &id)
+	provider, err := data.ProviderByID(id)
+	if err != nil {
+		error_message(writer, request, fmt.Sprintln(err))
+		return
+	}
+	provider.Name = request.PostFormValue("name")
+	provider.FullName = request.PostFormValue("fullname")
+	err = provider.Update()
+	if err != nil {
+		error_message(writer, request, fmt.Sprintln(err))
+		return
+	}
+	http.Redirect(writer, request, "/providers", 302)
 }
 func createProvider(writer http.ResponseWriter, request *http.Request) {
-	return
+	provider := data.Provider{
+		Name:     request.PostFormValue("name"),
+		FullName: request.PostFormValue("fullname"),
+	}
+	err := provider.Create()
+	if err != nil {
+		error_message(writer, request, fmt.Sprintln(err))
+		return
+	}
+	http.Redirect(writer, request, "/providers", 302)
 }
 func createUser(writer http.ResponseWriter, request *http.Request) {
 	request.ParseForm()
@@ -118,7 +151,8 @@ func createUser(writer http.ResponseWriter, request *http.Request) {
 		Password: "password", Privileges: canEdit | canBroweAll | canEditAll | canAdmin}
 	err := user.Create()
 	if err != nil {
-		fmt.Println(err)
+		error_message(writer, request, fmt.Sprintln(err))
+		return
 	}
 	http.Redirect(writer, request, "/users", 302)
 }
@@ -135,7 +169,8 @@ func updateUser(writer http.ResponseWriter, request *http.Request) {
 
 	user, err := data.UserByID(id)
 	if err != nil {
-		fmt.Println(err)
+		error_message(writer, request, fmt.Sprintln(err))
+		return
 	}
 	user.Name = request.PostFormValue("name")
 	user.DepartmentId = deptId
@@ -185,5 +220,21 @@ func editUser(writer http.ResponseWriter, request *http.Request) {
 			Departments: depts,
 		}
 		generateHTML(writer, items, "login.layout", "public.navbar", "edituser")
+	}
+}
+func doAdmin(hf func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+
+		curUser, err := getUserBySession(writer, request)
+		if err != nil {
+			warning(err)
+			http.Redirect(writer, request, "/login", 302)
+			return
+		}
+		if curUser.Privileges&data.CanAdmin != data.CanAdmin {
+			http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户权限！"), 302)
+			return
+		}
+		hf(writer, request)
 	}
 }

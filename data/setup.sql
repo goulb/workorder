@@ -1,5 +1,5 @@
 create table departments (name);
-create table providers (name);
+create table providers (name,fullname);
 create table users (name,password,department_id,privileges);
 create table sessions (uuid,user_id,created_at);
 create table cartypes (weight,type_name);

@@ -72,7 +72,6 @@ func updatePassword(writer http.ResponseWriter, request *http.Request) {
 	request.ParseForm()
 	user, err := getUserBySession(writer, request)
 	if err != nil {
-		http.Redirect(writer, request, "/login", 302)
 		return
 	}
 	opw, npw, rpw := request.PostFormValue("oldpassword"),

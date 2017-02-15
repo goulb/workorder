@@ -2,7 +2,8 @@
 package main
 
 import (
-	"html/template"
+	"fmt"
+	//"html/template"
 	"net/http"
 	"workorder/data"
 )
@@ -31,18 +32,11 @@ func getUserBySession(writer http.ResponseWriter, request *http.Request) (user d
 }
 
 func index(writer http.ResponseWriter, request *http.Request) {
-	//fmt.Fprintf(writer, "Hello World, %s!", request.URL.Path[1:])
-
-	getUserBySession(writer, request)
-	files := []string{"templates/layout.html",
-		"templates/navbar.html",
-		"templates/index.html"}
-	templates := template.Must(template.ParseFiles(files...))
-	//worlorders := []workorder{{"12345", "xx"}, {"67890", "yy"}}
-	workorders := data.GetWorkorder()
-	//threads, err := data.Threads()
-	//if err == nil {
-
-	templates.ExecuteTemplate(writer, "layout", workorders)
-	//}
+	if request.URL.Path != "/" {
+		error_message(writer, request, fmt.Sprintf("页面%s未找到！", request.URL.Path))
+	} else {
+		if _, err := getUserBySession(writer, request); err == nil {
+			http.Redirect(writer, request, "/orders", 302)
+		}
+	}
 }

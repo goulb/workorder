@@ -24,9 +24,6 @@ func main() {
 		"/departments":        departments,
 		"/departments/new":    newDepartment,
 		"/departments/create": createDepartment,
-		"/providers":          providers,
-		"/providers/new":      newProvider,
-		"/providers/create":   createProvider,
 	}
 	mux := http.NewServeMux()
 	depts, _ = data.Departments()
@@ -46,6 +43,13 @@ func main() {
 	mux.HandleFunc("/orders/update", changeOrder(updateOrder))
 	mux.HandleFunc("/orders/edit", changeOrder(editOrder))
 	mux.HandleFunc("/orders/delete", changeOrder(deleteOrder))
+
+	mux.HandleFunc("/providers", doAdmin(providers))
+	mux.HandleFunc("/providers/new", doAdmin(editProvider))
+	mux.HandleFunc("/providers/edit", doAdmin(editProvider))
+	mux.HandleFunc("/providers/create", doAdmin(createProvider))
+	mux.HandleFunc("/providers/update", doAdmin(updateProvider))
+
 	mux.HandleFunc("/password", changePassword)
 	mux.HandleFunc("/password/update", updatePassword)
 	mux.HandleFunc("/password/reset", resetPassword)

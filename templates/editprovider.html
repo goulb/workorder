@@ -1,0 +1,28 @@
+{{ define "content" }}
+
+<form class="form-signin center" role="form" action="/departments/create" method="post">
+  <h2 class="form-signin-heading">
+    <i class="fa fa-comments-o">
+      <span id="title">添加用车单位</span>
+    </i>
+  </h2>
+  <input type="hidden" name="id" value="{{ .Id }}">
+  <input type="name" name="name" class="form-control" placeholder="派车单位简称" value="{{.Name}}" required autofocus>
+  <input type="name" name="fullname" class="form-control" placeholder="派车单位全称" value="{{.FullName}}" required autofocus>
+  <br/>
+  <button class="btn btn-lg btn-primary btn-block" type="submit">确定</button>
+  <br/>
+</form>
+<script type="text/javascript">
+$(function(){
+	id={{ .Id }}
+	if(id){
+		$("span#title").text("修改派车单位");
+		$("form").prop("action","/providers/update");
+	}else{
+		$("span#title").text("添加派车单位");
+		$("form").prop("action","/providers/create");
+	}
+});
+</script>
+{{ end }}

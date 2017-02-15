@@ -1,12 +1,13 @@
 {{ define "content" }}
 
 <p class="lead">
-  <a href="/provider/new">增加派车单位</a> 
+  <a href="/providers/new">增加派车单位</a> 
 </p>
 <table class="table table-striped">
 <thead>
       <tr>
-        <th>单位名称</th>
+        <th>单位简称</th>
+        <th>单位全称</th>
         <th style='text-align: right;'>操作</th>
         
       </tr>
@@ -15,9 +16,10 @@
 {{ range . }}
 <tr>
 <td>{{ .Name }}</td>
+<td>{{ .FullName }}</td>
 <td style='text-align: right;'>
-<a href="/provider/edit?id={{ .Id }}"><i class="fa fa-edit"></i></a>
-<a href="/provider/delete?id={{ .Id }}"><i class="fa fa-trash"></i></a>
+<a href="/providers/edit?id={{ .Id }}"><i class="fa fa-edit"></i></a>
+<a href="/providers/delete?id={{ .Id }}"><i class="fa fa-trash"></i></a>
 </td>
 </tr>
 {{ end }}
