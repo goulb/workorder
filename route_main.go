@@ -17,7 +17,8 @@ func err(writer http.ResponseWriter, request *http.Request) {
 		generateHTML(writer, vals.Get("msg"), "layout", "private.navbar", "error")
 	}
 }
-func getUserBySession(writer http.ResponseWriter, request *http.Request) (user data.User, err error) {
+func getUserBySession(writer http.ResponseWriter, request *http.Request,
+) (user data.User, err error) {
 	sess, err := session(writer, request)
 	if err != nil {
 		http.Redirect(writer, request, "/login", 302)

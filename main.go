@@ -15,16 +15,7 @@ var adminHandles map[string]func(http.ResponseWriter, *http.Request)
 
 func main() {
 	p("WorkOrder", version(), "started at", config.Address)
-	adminHandles = map[string]func(http.ResponseWriter, *http.Request){
-		"/users":              users,
-		"/users/new":          newUser,
-		"/users/create":       createUser,
-		"/users/edit":         editUser,
-		"/users/update":       updateUser,
-		"/departments":        departments,
-		"/departments/new":    newDepartment,
-		"/departments/create": createDepartment,
-	}
+
 	mux := http.NewServeMux()
 	depts, _ = data.Departments()
 	provs, _ = data.Providers()
@@ -38,28 +29,34 @@ func main() {
 	mux.HandleFunc("/login", login)
 	mux.HandleFunc("/logout", logout)
 	mux.HandleFunc("/orders", orders)
-	mux.HandleFunc("/orders/new", changeOrder(newOrder))
-	mux.HandleFunc("/orders/create", changeOrder(createOrder))
-	mux.HandleFunc("/orders/update", changeOrder(updateOrder))
-	mux.HandleFunc("/orders/edit", changeOrder(editOrder))
-	mux.HandleFunc("/orders/delete", changeOrder(deleteOrder))
+	mux.HandleFunc("/orders/new", privilegeHandle(newOrder, data.CanEditAll))
+	mux.HandleFunc("/orders/create", privilegeHandle(createOrder, data.CanEditAll))
+	mux.HandleFunc("/orders/update", privilegeHandle(updateOrder, data.CanEditAll))
+	mux.HandleFunc("/orders/edit", privilegeHandle(editOrder, data.CanEditAll))
+	mux.HandleFunc("/orders/delete", privilegeHandle(deleteOrder, data.CanEditAll))
+	mux.HandleFunc("/workitems", privilegeHandle(workitems, 0))
+	mux.HandleFunc("/workitems/new", privilegeHandle(newWorkitem, data.CanEdit))
+	mux.HandleFunc("/workitems/edit", privilegeHandle(editWorkitem, data.CanEdit))
+	mux.HandleFunc("/workitems/create", privilegeHandle(createWorkitem, data.CanEdit))
+	mux.HandleFunc("/workitems/update", privilegeHandle(updateWorkitem, data.CanEdit))
 
-	mux.HandleFunc("/providers", doAdmin(providers))
-	mux.HandleFunc("/providers/new", doAdmin(editProvider))
-	mux.HandleFunc("/providers/edit", doAdmin(editProvider))
-	mux.HandleFunc("/providers/create", doAdmin(createProvider))
-	mux.HandleFunc("/providers/update", doAdmin(updateProvider))
+	mux.HandleFunc("/providers", privilegeHandle(providers, data.CanAdmin))
+	mux.HandleFunc("/providers/new", privilegeHandle(editProvider, data.CanAdmin))
+	mux.HandleFunc("/providers/edit", privilegeHandle(editProvider, data.CanAdmin))
+	mux.HandleFunc("/providers/create", privilegeHandle(createProvider, data.CanAdmin))
+	mux.HandleFunc("/providers/update", privilegeHandle(updateProvider, data.CanAdmin))
+	mux.HandleFunc("/users", privilegeHandle(users, data.CanAdmin))
+	mux.HandleFunc("/users/new", privilegeHandle(newUser, data.CanAdmin))
+	mux.HandleFunc("/users/create", privilegeHandle(createUser, data.CanAdmin))
+	mux.HandleFunc("/users/edit", privilegeHandle(editUser, data.CanAdmin))
+	mux.HandleFunc("/users/update", privilegeHandle(updateUser, data.CanAdmin))
+	mux.HandleFunc("/departments", privilegeHandle(departments, data.CanAdmin))
+	mux.HandleFunc("/departments/new", privilegeHandle(newDepartment, data.CanAdmin))
+	mux.HandleFunc("/departments/create", privilegeHandle(createDepartment, data.CanAdmin))
 
 	mux.HandleFunc("/password", changePassword)
 	mux.HandleFunc("/password/update", updatePassword)
-	mux.HandleFunc("/password/reset", resetPassword)
-	mux.HandleFunc("/workitems", workitems)
-	mux.HandleFunc("/workitems/new", newWorkitem)
-	mux.HandleFunc("/workitems/create", createWorkitem)
-	mux.HandleFunc("/workitems/update", updateWorkitem)
-	for key, _ := range adminHandles {
-		mux.HandleFunc(key, admin)
-	}
+	mux.HandleFunc("/password/reset", privilegeHandle(resetPassword, data.CanAdmin))
 
 	mux.HandleFunc("/authenticate", authenticate)
 

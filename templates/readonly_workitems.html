@@ -1,0 +1,24 @@
+{{ define "layout" }}
+
+<table data-toggle="table">
+    <thead>
+    <tr>
+        <th>作业时段及内容</th>
+        <th>作业地点</th>
+        <th>作业量</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{range .WorkItems}}
+    <tr>
+        <td>
+        {{.Work}}
+        </td>
+        <td>{{.Place}}</td>
+        <td>{{.Quantity}}</td>
+        
+    </tr>
+    {{end}}
+    </tbody>
+</table>
+{{end}}

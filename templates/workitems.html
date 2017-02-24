@@ -15,9 +15,7 @@
         <th>作业时段及内容</th>
         <th>作业地点</th>
         <th>作业量</th>
-        <th>
-        
-        </th>
+        <th></th>
     </tr>
     </thead>
     <tbody>
@@ -29,8 +27,8 @@
         <td>{{.Place}}</td>
         <td>{{.Quantity}}</td>
         <td data-text="122">
-            <a href="/orders/edit?id={{.Id}}"><i class="fa fa-edit" title="修改"></i></a>
-            <a href="/orders/delete?id={{.Id}}"><i class="fa fa-trash" title="删除"></i></a>
+            <a href="/workitems/edit?id={{.Id}}"><i class="fa fa-edit" title="修改"></i></a>
+            <a href="/workitems/delete?id={{.Id}}"><i class="fa fa-trash" title="删除"></i></a>
         </td>
     </tr>
     {{end}}

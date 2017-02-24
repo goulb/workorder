@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"workorder/data"
 )
@@ -84,4 +85,19 @@ func updatePassword(writer http.ResponseWriter, request *http.Request) {
 		http.Redirect(writer, request, "/password", 302)
 	}
 
+}
+func privilegeHandle(hf func(http.ResponseWriter, *http.Request, data.User),
+	privilege int) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		curUser, err := getUserBySession(writer, request)
+		if err != nil {
+			http.Redirect(writer, request, "/login", 302)
+			return
+		}
+		if curUser.Privileges&privilege != privilege {
+			http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户没有该项操作权限！"), 302)
+			return
+		}
+		hf(writer, request, curUser)
+	}
 }

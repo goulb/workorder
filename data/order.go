@@ -166,3 +166,18 @@ func (order *Order) WorkItems() (workitems []WorkItem, err error) {
 	}
 	return
 }
+func (workitem *WorkItem) Update() (err error) {
+	_, err = Db.Exec(`update workitems set work=$1,place=$2,unit=$3,
+	quantity=$4 where rowid=$5`, &workitem.Work, &workitem.Place, &workitem.Unit,
+		&workitem.Quantity, &workitem.Id)
+	return
+}
+func WorkItemByID(id int) (workitem WorkItem, err error) {
+	err = Db.QueryRow(`select rowid,order_id,work,place,unit,quantity
+		from workitems where rowid=$1`, id).Scan(&workitem.Id, &workitem.OrderId,
+		&workitem.Work, &workitem.Place, &workitem.Unit, &workitem.Quantity)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return
+}

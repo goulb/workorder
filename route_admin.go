@@ -21,21 +21,7 @@ var privilegeStrings = map[int]string{
 	data.CanAdmin:    "系统管理",
 }
 
-func admin(writer http.ResponseWriter, request *http.Request) {
-	/*curUser, err := getUserBySession(writer, request)
-	if err != nil {
-		http.Redirect(writer, request, "/login", 302)
-		return
-	}
-	if curUser.Privileges&data.CanAdmin != data.CanAdmin {
-		http.Redirect(writer, request, "/", 302)
-		return
-	}*/
-	//fmt.Fprintf(writer, "Hello World, %s!", request.URL.Path[1:])
-	adminHandles[request.URL.Path](writer, request)
-}
-
-func users(writer http.ResponseWriter, request *http.Request) {
+func users(writer http.ResponseWriter, request *http.Request, user data.User) {
 
 	users, err := data.Users()
 	if err != nil {
@@ -70,16 +56,16 @@ func users(writer http.ResponseWriter, request *http.Request) {
 	}
 	generateHTML(writer, displayUsers, "layout", "admin.navbar", "users")
 }
-func departments(writer http.ResponseWriter, request *http.Request) {
+func departments(writer http.ResponseWriter, request *http.Request, user data.User) {
 
 	generateHTML(writer, depts, "layout", "admin.navbar", "departments")
 }
-func newDepartment(writer http.ResponseWriter, request *http.Request) {
+func newDepartment(writer http.ResponseWriter, request *http.Request, user data.User) {
 
 	t := parseTemplateFiles("login.layout", "public.navbar", "newdepartment")
 	t.Execute(writer, nil)
 }
-func createDepartment(writer http.ResponseWriter, request *http.Request) {
+func createDepartment(writer http.ResponseWriter, request *http.Request, user data.User) {
 
 	dept := data.Department{Name: request.PostFormValue("name")}
 	err := dept.Create()
@@ -89,7 +75,7 @@ func createDepartment(writer http.ResponseWriter, request *http.Request) {
 	depts, err = data.Departments()
 	http.Redirect(writer, request, "/departments", 302)
 }
-func providers(writer http.ResponseWriter, request *http.Request) {
+func providers(writer http.ResponseWriter, request *http.Request, user data.User) {
 	provs, err := data.Providers()
 	if err != nil {
 		danger(err)
@@ -97,7 +83,7 @@ func providers(writer http.ResponseWriter, request *http.Request) {
 	}
 	generateHTML(writer, provs, "layout", "admin.navbar", "providers")
 }
-func editProvider(writer http.ResponseWriter, request *http.Request) {
+func editProvider(writer http.ResponseWriter, request *http.Request, user data.User) {
 	vals := request.URL.Query()
 	provider := data.Provider{}
 	id := 0
@@ -107,7 +93,7 @@ func editProvider(writer http.ResponseWriter, request *http.Request) {
 	generateHTML(writer, provider, "login.layout", "public.navbar",
 		"editprovider")
 }
-func updateProvider(writer http.ResponseWriter, request *http.Request) {
+func updateProvider(writer http.ResponseWriter, request *http.Request, user data.User) {
 	request.ParseForm()
 	id := 0
 	fmt.Sscan(request.PostFormValue("id"), &id)
@@ -125,7 +111,7 @@ func updateProvider(writer http.ResponseWriter, request *http.Request) {
 	}
 	http.Redirect(writer, request, "/providers", 302)
 }
-func createProvider(writer http.ResponseWriter, request *http.Request) {
+func createProvider(writer http.ResponseWriter, request *http.Request, user data.User) {
 	provider := data.Provider{
 		Name:     request.PostFormValue("name"),
 		FullName: request.PostFormValue("fullname"),
@@ -135,9 +121,10 @@ func createProvider(writer http.ResponseWriter, request *http.Request) {
 		error_message(writer, request, fmt.Sprintln(err))
 		return
 	}
+	provs, _ = data.Providers()
 	http.Redirect(writer, request, "/providers", 302)
 }
-func createUser(writer http.ResponseWriter, request *http.Request) {
+func createUser(writer http.ResponseWriter, request *http.Request, user data.User) {
 	request.ParseForm()
 
 	var deptId, canEdit, canBroweAll, canEditAll, canAdmin int
@@ -147,16 +134,16 @@ func createUser(writer http.ResponseWriter, request *http.Request) {
 	fmt.Sscan(request.PostFormValue("canEditAll"), &canEditAll)
 	fmt.Sscan(request.PostFormValue("canAdmin"), &canAdmin)
 	p(deptId, canEdit, canBroweAll, canEditAll, canAdmin)
-	user := data.User{Name: request.PostFormValue("name"), DepartmentId: deptId,
+	u := data.User{Name: request.PostFormValue("name"), DepartmentId: deptId,
 		Password: "password", Privileges: canEdit | canBroweAll | canEditAll | canAdmin}
-	err := user.Create()
+	err := u.Create()
 	if err != nil {
 		error_message(writer, request, fmt.Sprintln(err))
 		return
 	}
 	http.Redirect(writer, request, "/users", 302)
 }
-func updateUser(writer http.ResponseWriter, request *http.Request) {
+func updateUser(writer http.ResponseWriter, request *http.Request, user data.User) {
 	request.ParseForm()
 
 	var id, deptId, canEdit, canBroweAll, canEditAll, canAdmin int
@@ -178,7 +165,7 @@ func updateUser(writer http.ResponseWriter, request *http.Request) {
 	user.Update()
 	http.Redirect(writer, request, "/users", 302)
 }
-func resetPassword(writer http.ResponseWriter, request *http.Request) {
+func resetPassword(writer http.ResponseWriter, request *http.Request, user data.User) {
 	fmt.Println("reset password")
 	vals := request.URL.Query()
 	var id int
@@ -193,7 +180,7 @@ func resetPassword(writer http.ResponseWriter, request *http.Request) {
 		http.Redirect(writer, request, "/users", 302)
 	}
 }
-func newUser(writer http.ResponseWriter, request *http.Request) {
+func newUser(writer http.ResponseWriter, request *http.Request, user data.User) {
 	items := struct {
 		User        data.User
 		Departments []data.Department
@@ -203,7 +190,7 @@ func newUser(writer http.ResponseWriter, request *http.Request) {
 	}
 	generateHTML(writer, items, "login.layout", "public.navbar", "edituser")
 }
-func editUser(writer http.ResponseWriter, request *http.Request) {
+func editUser(writer http.ResponseWriter, request *http.Request, user data.User) {
 	vals := request.URL.Query()
 	var id int
 	fmt.Sscan(vals.Get("id"), &id)
@@ -220,21 +207,5 @@ func editUser(writer http.ResponseWriter, request *http.Request) {
 			Departments: depts,
 		}
 		generateHTML(writer, items, "login.layout", "public.navbar", "edituser")
-	}
-}
-func doAdmin(hf func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-
-		curUser, err := getUserBySession(writer, request)
-		if err != nil {
-			warning(err)
-			http.Redirect(writer, request, "/login", 302)
-			return
-		}
-		if curUser.Privileges&data.CanAdmin != data.CanAdmin {
-			http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户权限！"), 302)
-			return
-		}
-		hf(writer, request)
 	}
 }

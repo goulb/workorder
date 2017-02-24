@@ -163,20 +163,7 @@ func createOrder(writer http.ResponseWriter, request *http.Request, user data.Us
 
 	http.Redirect(writer, request, "/orders", 302)
 }
-func changeOrder(hf func(http.ResponseWriter, *http.Request, data.User)) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		curUser, err := getUserBySession(writer, request)
-		if err != nil {
-			http.Redirect(writer, request, "/login", 302)
-			return
-		}
-		if curUser.Privileges&data.CanEditAll != data.CanEditAll {
-			http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户没有添加任务单权限！"), 302)
-			return
-		}
-		hf(writer, request, curUser)
-	}
-}
+
 func cartypeMap() (cartypemap map[int]string) {
 	cartypemap = map[int]string{}
 	for _, cartype := range cartypes {
@@ -224,11 +211,16 @@ func carTypeIDByString(s string) (cartypeid int) {
 	}
 	return
 }
-func workitems(writer http.ResponseWriter, request *http.Request) {
+func workitems(writer http.ResponseWriter, request *http.Request, user data.User) {
 	vals := request.URL.Query()
 	id := 0
 	fmt.Sscan(vals.Get("pid"), &id)
 	order, err := data.OrderByID(id)
+	temp := "readonly_workitems"
+	if (user.DepartmentId == order.DepartmentId) && (!order.Locked) &&
+		(user.Privileges&data.CanEdit == data.CanEdit) {
+		temp = "workitems"
+	}
 	workItems, err := order.WorkItems()
 	if err != nil {
 		http.Redirect(writer, request,
@@ -241,12 +233,28 @@ func workitems(writer http.ResponseWriter, request *http.Request) {
 		id,
 		workItems,
 	}
-	generateHTML(writer, info, "workitems")
+	generateHTML(writer, info, temp)
 }
-func updateWorkitem(writer http.ResponseWriter, request *http.Request) {
-	generateHTML(writer, nil, "workitems")
+func updateWorkitem(writer http.ResponseWriter, request *http.Request, user data.User) {
+	request.ParseForm()
+	var id, unit int
+	var quantity float32
+	fmt.Sscan(request.PostFormValue("workitemid"), &id)
+	fmt.Sscan(request.PostFormValue("unit"), &unit)
+	fmt.Sscan(request.PostFormValue("quantity"), &quantity)
+
+	workItem, err := data.WorkItemByID(id)
+	if err != nil {
+		danger(err)
+	}
+	workItem.Work = request.PostFormValue("work")
+	workItem.Place = request.PostFormValue("place")
+	workItem.Unit = unit
+	workItem.Quantity = quantity
+	workItem.Update()
+	http.Redirect(writer, request, "/orders", 302)
 }
-func createWorkitem(writer http.ResponseWriter, request *http.Request) {
+func createWorkitem(writer http.ResponseWriter, request *http.Request, user data.User) {
 	request.ParseForm()
 	var orderid, unit int
 	var quantity float32
@@ -261,15 +269,15 @@ func createWorkitem(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 	order.CreateWorkItem(work, place, unit, quantity)
-	http.Redirect(writer, request, "/workitems", 302)
+	http.Redirect(writer, request, "/orders", 302)
 }
-func newWorkitem(writer http.ResponseWriter, request *http.Request) {
+func newWorkitem(writer http.ResponseWriter, request *http.Request, user data.User) {
 	vals := request.URL.Query()
-	id := 0
-	fmt.Sscan(vals.Get("pid"), &id)
-	order, err := data.OrderByID(id)
+	pid := 0
+	fmt.Sscan(vals.Get("pid"), &pid)
+	order, err := data.OrderByID(pid)
 	if err != nil {
-		fmt.Println(err)
+		danger(err)
 	}
 	info := struct {
 		Order      data.Order
@@ -277,12 +285,45 @@ func newWorkitem(writer http.ResponseWriter, request *http.Request) {
 		Department string
 		Provider   string
 		Cartype    string
+		WorkItem   data.WorkItem
 	}{
 		order,
 		fmt.Sprintf("GXJCWL%07d", 20000+order.Id),
 		deptMap()[order.DepartmentId],
 		providerMap()[order.ProviderId],
 		cartypeMap()[order.CarTypeId],
+		data.WorkItem{},
 	}
-	generateHTML(writer, info, "login.layout", "public.navbar", "newworkitem")
+	generateHTML(writer, info, "login.layout", "public.navbar", "editworkitem")
+}
+
+func editWorkitem(writer http.ResponseWriter, request *http.Request, user data.User) {
+	vals := request.URL.Query()
+	id := 0
+	fmt.Sscan(vals.Get("id"), &id)
+	p(id)
+	workItem, err := data.WorkItemByID(id)
+	if err != nil {
+		danger(err)
+	}
+	order, err := data.OrderByID(workItem.Id)
+	if err != nil {
+		danger(err)
+	}
+	info := struct {
+		Order      data.Order
+		OrderNum   string
+		Department string
+		Provider   string
+		Cartype    string
+		WorkItem   data.WorkItem
+	}{
+		order,
+		fmt.Sprintf("GXJCWL%07d", 20000+order.Id),
+		deptMap()[order.DepartmentId],
+		providerMap()[order.ProviderId],
+		cartypeMap()[order.CarTypeId],
+		workItem,
+	}
+	generateHTML(writer, info, "login.layout", "public.navbar", "editworkitem")
 }
