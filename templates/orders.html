@@ -90,10 +90,8 @@ function getoperate(id,locked){
   if (canedit && !locked){
     html+='<a href="/orders/edit?id='+id+'"><i class="fa fa-edit" title="修改"></i></a>\
       <a href="/orders/delete?id='+id+'"><i class="fa fa-trash" title="删除"></i></a>';
-  }else if (locked){
+  }else if (canedit && locked){
     html+='<a href="/orders/unlock?id='+id+'"><i class="fa fa-unlock" title="解锁"></i></a>';
-  }else{
-    html+='<a href="/orders/lock?id='+id+'"><i class="fa fa-lock" title="锁定"></i></a>';
   }
   return html;
 }
