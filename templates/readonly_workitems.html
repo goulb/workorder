@@ -12,10 +12,10 @@
     {{range .WorkItems}}
     <tr>
         <td>
-        {{.Work}}
+        {{.WorkItem.Work}}
         </td>
-        <td>{{.Place}}</td>
-        <td>{{.Quantity}}</td>
+        <td>{{.WorkItem.Place}}</td>
+        <td>{{.WorkItem.Quantity}}{{.UnitStr}}</td>
         
     </tr>
     {{end}}

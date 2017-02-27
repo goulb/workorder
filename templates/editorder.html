@@ -3,11 +3,11 @@
 <form class="form-signin center" role="form" action="/orders/update" method="post">
   <h2 class="form-signin-heading">
     <i class="fa fa-comments-o">
-      修改任务单
+      <span id="title">修改任务单</span>
     </i>
   </h2>
   <input type="hidden" name="id" value="{{ .Order.Id }}">
-  <div class='input-group'>
+  <div id="ordernum" class='input-group'>
     <span class="input-group-addon" id="basic-addon2">任务单号</span>
     <input type='text' name="ordernum" class="form-control" disabled="disabled" />
   </div>
@@ -29,7 +29,7 @@
   </div>
   <div class="input-group">
     <span class="input-group-addon" id="basic-addon2"><a id="cartype" href="#" data-toggle="modal" data-target="#myModal">车型吨位</a></span>
-    <input type="text" name="cartype" class="form-control" placeholder="Recipient's username" aria-describedby="basic-addon2">
+    <input type="text" name="cartype" class="form-control" placeholder="例如：3T叉车" aria-describedby="basic-addon2">
   </div>
 	<div class="input-group">  
     <span class="input-group-addon" id="basic-addon2">用途类别</span>
@@ -51,7 +51,7 @@
     <input type='text' name="carnum" class="form-control" />
   </div>
   <br/>
-  <button class="btn btn-lg btn-primary btn-block" type="submit">修改</button>
+  <button class="btn btn-lg btn-primary btn-block" type="submit">确定</button>
   <br/>
 </form>
 <!-- Modal -->
@@ -162,13 +162,21 @@
         $("#myModal").modal("hide");
       }
     });
-    $("input[name='ordernum']").prop("value",ordernum);
-    $("select[name='department']").val(order.DepartmentId)
-    $("select[name='provider']").val(order.ProviderId)
-    $("input[name='carnum']").val(order.CarNum)
-    $("input[name='datebegin']").val(order.DateBegin)
-    $("input[name='dateend']").val(order.DateEnd)
-    $("input[name='cartype']").val(cartype)
+    if (order.Id){
+      $("input[name='ordernum']").prop("value",ordernum);
+      $("select[name='department']").val(order.DepartmentId)
+      $("select[name='provider']").val(order.ProviderId)
+      $("select[name='usefor']").val(order.UseFor)
+      $("input[name='carnum']").val(order.CarNum)
+      $("input[name='datebegin']").val(order.DateBegin)
+      $("input[name='dateend']").val(order.DateEnd)
+      $("input[name='cartype']").val(cartype)
+      
+    }else{
+      $("span#title").text("添加任务单");
+      $("form").prop("action","/orders/create");
+      $("div#ordernum").hide();
+    }
   });
 </script>
 

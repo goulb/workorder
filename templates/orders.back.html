@@ -1,5 +1,5 @@
 {{ define "content" }}
-<div id="tabledata" style="display:none">
+<div id="tabledata"  class="hidden-xs" style="display:none">
   <div id="toolbar">
     <div class="form-inline" role="form">
       <div class="form-group">
@@ -7,7 +7,7 @@
           <i class="fa fa-plus" title="Align Left"></i>
           添加
         </a>
-        <a id="print" class="btn btn-primary" href="#">
+        <a class="btn btn-primary" href="#">
           <i class="fa fa-print" title="Align Left"></i> 
           打印
         </a>
@@ -38,7 +38,37 @@
     </thead>
   </table>
 </div>
-
+<div id="listdata"  class="visible-xs-block">
+  <div class="input-group lead">
+    <div>
+      <input type="text" id="search" class="form-control" placeholder="Search">
+    </div>
+    <div class="input-group-btn">
+      <a class="btn btn-default" href="#" id="search">
+        <i class="fa fa-search" title="搜索"></i>
+      </a>
+      <a id="insert" class="btn btn-default" href="/orders/new">
+        <i class="fa fa-plus" title="添加任务单"></i>
+      </a>
+    </div>
+  </div>
+  <div id="panels"></div>
+</div>
+<div style="display:none">
+  <div id="panel" class="panel panel-default">
+    <div class="panel-heading">
+      <span class="lead"> 
+        <i class="fa fa-truck"></i>
+      </span>
+    </div>
+    <div class="panel-body">
+      <div class="pull-right">
+        
+        <a href="#">Read more</a>
+      </div>
+    </div>
+  </div>
+</div>
 <script type="text/javascript" >
 var canedit={{.CanEdit}}
 var data = [
@@ -79,12 +109,37 @@ function detailFormatter(index, row) {
   });
   return '<div id='+row["id"]+'>loading...'+row["id"]+'</div>';
 }
-
+function showdata(data){
+  p=$("#panel").clone();
+	p.prop("id",data.id);
+	$("#panels").append(p);
+	p.find("span.lead").append(data.num);
+	p.find("div.panel-body").prepend(data.dept+" "+data.date+" "+data.cartype+" "+data.provider+" "+data.carnum+" "+data.createdat);
+  p.find("div.pull-right").prepend(data.operate);
+}
 $(document).ready(function(){
 	
+  for (i in data){
+    showdata(data[i])
+	}
   if (!canedit){
     $("a#insert").addClass("disabled")
   }
+  $("a#search").click(function(){
+    $("#panels").children(".panel").remove();
+    for (i in data){
+      s="";
+    	for(p in data[i]){
+        if(p!=0){
+          s=s+" "+data[i][p];
+        } 
+      }
+    	subs=$("input#search").prop("value");
+    	if(s.indexOf(subs)>0 || subs==""){
+            showdata(data[i]);
+      }
+    }
+  });
   $("li#home").addClass("active");
   $("#table").bootstrapTable({data: data});
   $("#tabledata").show();     

@@ -3,11 +3,18 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	//"time"
 	"workorder/data"
 )
 
+type displayWorkItem struct {
+	WorkItem data.WorkItem
+	UnitStr  string
+}
+
 var useforstr = []string{"生产用车", "检修用车"}
+var unitstrs = []string{"台班", "吨"}
 
 type displayOrder struct {
 	Id         int
@@ -77,12 +84,18 @@ func newOrder(writer http.ResponseWriter, request *http.Request, user data.User)
 		Depts     []data.Department
 		Providers []data.Provider
 		CarTypes  []data.CarType
+		OrderNum  string
+		CarType   string
+		Order     data.Order
 	}{
 		depts,
 		provs,
 		cartypes,
+		"",
+		"",
+		data.Order{},
 	}
-	generateHTML(writer, info, "login.layout", "public.navbar", "neworder")
+	generateHTML(writer, info, "login.layout", "public.navbar", "editorder")
 }
 func editOrder(writer http.ResponseWriter, request *http.Request, user data.User) {
 
@@ -93,6 +106,11 @@ func editOrder(writer http.ResponseWriter, request *http.Request, user data.User
 	order, _ := data.OrderByID(orderid)
 	if order.Locked {
 		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前任务单已锁定！"), 302)
+		return
+	}
+	workitems, _ := order.WorkItems()
+	if len(workitems) > 0 {
+		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前任务单已填写作业内容！"), 302)
 		return
 	}
 	info := struct {
@@ -113,7 +131,22 @@ func editOrder(writer http.ResponseWriter, request *http.Request, user data.User
 	generateHTML(writer, info, "login.layout", "public.navbar", "editorder")
 }
 func deleteOrder(writer http.ResponseWriter, request *http.Request, user data.User) {
-	fmt.Fprintln(writer, user)
+	vals := request.URL.Query()
+	orderid := 0
+	fmt.Sscan(vals.Get("id"), &orderid)
+
+	order, _ := data.OrderByID(orderid)
+	if order.Locked {
+		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前任务单已锁定！"), 302)
+		return
+	}
+	workitems, _ := order.WorkItems()
+	if len(workitems) > 0 {
+		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前任务单已填写作业内容！"), 302)
+		return
+	}
+	order.Delete()
+	http.Redirect(writer, request, "/orders", 302)
 }
 
 func updateOrder(writer http.ResponseWriter, request *http.Request, user data.User) {
@@ -211,11 +244,41 @@ func carTypeIDByString(s string) (cartypeid int) {
 	}
 	return
 }
+func unlockOrder(writer http.ResponseWriter, request *http.Request, user data.User) {
+	vals := request.URL.Query()
+	id := 0
+	fmt.Sscan(vals.Get("id"), &id)
+	order, err := data.OrderByID(id)
+	if err != nil {
+		danger(err)
+		return
+	}
+	order.Locked = false
+	order.Update()
+	http.Redirect(writer, request, "/orders", 302)
+}
+func lockOrder(writer http.ResponseWriter, request *http.Request, user data.User) {
+	vals := request.URL.Query()
+	id := 0
+	fmt.Sscan(vals.Get("id"), &id)
+	order, err := data.OrderByID(id)
+	if err != nil {
+		danger(err)
+		return
+	}
+	if user.DepartmentId != order.DepartmentId {
+		return
+	}
+	order.Locked = true
+	order.Update()
+	http.Redirect(writer, request, "/orders", 302)
+}
 func workitems(writer http.ResponseWriter, request *http.Request, user data.User) {
 	vals := request.URL.Query()
 	id := 0
 	fmt.Sscan(vals.Get("pid"), &id)
 	order, err := data.OrderByID(id)
+
 	temp := "readonly_workitems"
 	if (user.DepartmentId == order.DepartmentId) && (!order.Locked) &&
 		(user.Privileges&data.CanEdit == data.CanEdit) {
@@ -226,14 +289,30 @@ func workitems(writer http.ResponseWriter, request *http.Request, user data.User
 		http.Redirect(writer, request,
 			fmt.Sprintf("/err?msg=%s", fmt.Sprint(err)), 302)
 	}
+	dwis := []displayWorkItem{}
+	for _, wi := range workItems {
+		dwi := displayWorkItem{wi, unitstrs[wi.Unit]}
+		dwis = append(dwis, dwi)
+	}
 	info := struct {
 		OrderID   int
-		WorkItems []data.WorkItem
+		WorkItems []displayWorkItem
 	}{
 		id,
-		workItems,
+		dwis,
 	}
 	generateHTML(writer, info, temp)
+}
+func deleteWorkitem(writer http.ResponseWriter, request *http.Request, user data.User) {
+	vals := request.URL.Query()
+	id := 0
+	fmt.Sscan(vals.Get("id"), &id)
+	workItem, err := data.WorkItemByID(id)
+	if err != nil {
+		danger(err)
+	}
+	workItem.Delete()
+	http.Redirect(writer, request, "/orders", 302)
 }
 func updateWorkitem(writer http.ResponseWriter, request *http.Request, user data.User) {
 	request.ParseForm()
@@ -268,6 +347,10 @@ func createWorkitem(writer http.ResponseWriter, request *http.Request, user data
 		fmt.Fprintln(writer, err)
 		return
 	}
+	if user.DepartmentId != order.DepartmentId {
+		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户无操作权限！"), 302)
+		return
+	}
 	order.CreateWorkItem(work, place, unit, quantity)
 	http.Redirect(writer, request, "/orders", 302)
 }
@@ -278,6 +361,10 @@ func newWorkitem(writer http.ResponseWriter, request *http.Request, user data.Us
 	order, err := data.OrderByID(pid)
 	if err != nil {
 		danger(err)
+	}
+	if user.DepartmentId != order.DepartmentId {
+		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户无操作权限！"), 302)
+		return
 	}
 	info := struct {
 		Order      data.Order
@@ -306,9 +393,13 @@ func editWorkitem(writer http.ResponseWriter, request *http.Request, user data.U
 	if err != nil {
 		danger(err)
 	}
-	order, err := data.OrderByID(workItem.Id)
+	order, err := data.OrderByID(workItem.OrderId)
 	if err != nil {
 		danger(err)
+	}
+	if user.DepartmentId != order.DepartmentId {
+		http.Redirect(writer, request, fmt.Sprintf("/err?msg=%s", "当前用户无操作权限！"), 302)
+		return
 	}
 	info := struct {
 		Order      data.Order
@@ -326,4 +417,20 @@ func editWorkitem(writer http.ResponseWriter, request *http.Request, user data.U
 		workItem,
 	}
 	generateHTML(writer, info, "login.layout", "public.navbar", "editworkitem")
+}
+func printOrders(writer http.ResponseWriter, request *http.Request) {
+	vals := request.URL.Query()
+	sids := vals.Get("ids")
+	ids := strings.Split(sids[2:len(sids)-2], ",")
+	for _, sid := range ids {
+		id := 0
+		fmt.Sscan(sid, &id)
+		order, _ := data.OrderByID(id)
+		if order.Locked {
+			wis, _ := order.WorkItems()
+			fmt.Fprintln(writer, order, wis)
+		}
+
+	}
+
 }

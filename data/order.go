@@ -50,15 +50,18 @@ func (order *Order) Create() (err error) {
 	return
 }
 func OrderByID(id int) (order Order, err error) {
-	s := ""
+	isubmit, ilocked, s := 0, 0, ""
 	err = Db.QueryRow(`select rowid, 
 		department_id,date_begin,date_end,provider_id,cartype_id,carnum,usefor,
-		careat_at from orders where rowid =$1`, id,
+		submit,locked,careat_at from orders where rowid =$1`, id,
 	).Scan(&order.Id, &order.DepartmentId, &order.DateBegin, &order.DateEnd,
-		&order.ProviderId, &order.CarTypeId, &order.CarNum, &order.UseFor, &s)
+		&order.ProviderId, &order.CarTypeId, &order.CarNum, &order.UseFor,
+		&isubmit, &ilocked, &s)
 	if err != nil {
 		return
 	}
+	order.Submit = (isubmit == 1)
+	order.Locked = (ilocked == 1)
 	order.CreatedAt, err = time.Parse(timeformat, s)
 	return
 }
@@ -135,6 +138,10 @@ func (order *Order) Update() (err error) {
 	}
 	return
 }
+func (order *Order) Delete() (err error) {
+	_, err = Db.Exec("delete from orders where rowid=$1", order.Id)
+	return
+}
 func (order *Order) CreateWorkItem(work string, place string, unit int,
 	quantity float32) (wi WorkItem, err error) {
 	fmt.Println(order.Id, work, unit, quantity)
@@ -164,6 +171,10 @@ func (order *Order) WorkItems() (workitems []WorkItem, err error) {
 			&wi.Quantity)
 		workitems = append(workitems, wi)
 	}
+	return
+}
+func (workitem *WorkItem) Delete() (err error) {
+	_, err = Db.Exec("delete from workitems where rowid=$1", workitem.Id)
 	return
 }
 func (workitem *WorkItem) Update() (err error) {
