@@ -3,9 +3,13 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
-	//"time"
 	"workorder/data"
+
+	"encoding/json"
+
+	"github.com/signintech/gopdf"
 )
 
 type displayWorkItem struct {
@@ -422,15 +426,73 @@ func printOrders(writer http.ResponseWriter, request *http.Request) {
 	vals := request.URL.Query()
 	sids := vals.Get("ids")
 	ids := strings.Split(sids[2:len(sids)-2], ",")
+	pdf := gopdf.GoPdf{}
+	pdf.Start(gopdf.Config{PageSize: gopdf.Rect{W: 648, H: 360}}) //595.28, 841.89 = A4
+	err := pdf.AddTTFFont("kai", "fireflysung.ttf")
+	if err != nil {
+		danger(err)
+	}
+	file, err := os.Open("template.json")
+	if err != nil {
+		danger(err)
+	}
+	decoder := json.NewDecoder(file)
+	template := PdfTemplate{}
+	err = decoder.Decode(&template)
+	if err != nil {
+		danger(err)
+	}
 	for _, sid := range ids {
 		id := 0
 		fmt.Sscan(sid, &id)
 		order, _ := data.OrderByID(id)
 		if order.Locked {
 			wis, _ := order.WorkItems()
-			fmt.Fprintln(writer, order, wis)
-		}
+			pdf.AddPage()
 
+			err = pdf.SetFont("kai", "", 14)
+			if err != nil {
+				danger(err)
+			}
+
+			for _, cell := range template.Cells {
+				DrawCellText(&pdf, cell)
+			}
+			if order.UseFor == 0 {
+				template.Titles[0].Text = "安全生产部确认签章\n年    月    日"
+			} else {
+				template.Titles[0].Text = "设备管理中心确认签章\n年    月    日"
+			}
+			template.Titles[1].Text = "用车单位（签章）：" + deptMap()[order.DepartmentId]
+			template.Titles[2].Text = order.DateBegin + " - " + order.DateEnd
+			template.Titles[3].Text = "编号：" + fmt.Sprintf("GXJCWL%07d", 20000+order.Id)
+			template.Titles[4].Text = providerMap()[order.ProviderId]
+			template.Titles[5].Text = cartypeMap()[order.CarTypeId]
+			template.Titles[6].Text = order.CarNum
+			for _, cell := range template.Titles {
+				DrawCellText(&pdf, cell)
+			}
+			detailcells := []CellText{}
+			for i, wi := range wis {
+				cell1 := template.Details[0]
+				cell1.Text = wi.Work
+				cell1.Top = cell1.Top + float64(i)*25
+				detailcells = append(detailcells, cell1)
+				cell2 := template.Details[1]
+				cell2.Text = wi.Place
+				cell2.Top = cell2.Top + float64(i)*25
+				detailcells = append(detailcells, cell2)
+				cell3 := template.Details[2]
+				cell3.Text = fmt.Sprintf("%.2f%s", wi.Quantity, unitstrs[wi.Unit])
+				cell3.Top = cell3.Top + float64(i)*25
+				detailcells = append(detailcells, cell3)
+			}
+			for _, cell := range detailcells {
+				DrawCellText(&pdf, cell)
+			}
+		}
 	}
+	writer.Header().Set("Content-Type", "application/pdf")
+	writer.Write(pdf.GetBytesPdf())
 
 }

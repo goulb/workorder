@@ -87,8 +87,17 @@ $(document).ready(function(){
   }
   $("li#home").addClass("active");
   $("#table").bootstrapTable({data: data});
-  $("#tabledata").show();     
-    
+  $("#tabledata").show(); 
+  $("a#print").click(function(){
+    ids=[]
+    selecteds=$("table#table").bootstrapTable('getAllSelections');
+    for (i in selecteds){
+      ids.push(selecteds[i].id);
+    }
+    if(ids.length>0){
+      window.open('/orders/print?ids="'+JSON.stringify(ids)+'"');
+    }
+  });      
 });
 </script>
 {{ end }}
