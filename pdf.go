@@ -29,7 +29,11 @@ type PdfTemplate struct {
 }
 
 func DrawCellText(pdf *gopdf.GoPdf, cellText CellText) (err error) {
-
+	err = pdf.SetFont(cellText.FontStyle.Name, cellText.FontStyle.Style,
+		cellText.FontStyle.Size)
+	if err != nil {
+		return
+	}
 	//draw border
 	pdf.SetX(cellText.Left)
 	pdf.SetY(cellText.Top)
@@ -37,11 +41,7 @@ func DrawCellText(pdf *gopdf.GoPdf, cellText CellText) (err error) {
 		gopdf.CellOption{Border: cellText.Option.Border})
 
 	//draw text
-	err = pdf.SetFont(cellText.FontStyle.Name, cellText.FontStyle.Style,
-		cellText.FontStyle.Size)
-	if err != nil {
-		return
-	}
+
 	charWitdh, err := pdf.MeasureTextWidth("中")
 	if err != nil {
 		return

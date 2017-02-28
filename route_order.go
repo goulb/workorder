@@ -18,6 +18,10 @@ type displayWorkItem struct {
 }
 
 var useforstr = []string{"生产用车", "检修用车"}
+var checkDepts = []string{
+	"安全生产部确认签章\n年    月    日",
+	"设备管理中心确认签章\n年    月    日",
+}
 var unitstrs = []string{"台班", "吨"}
 
 type displayOrder struct {
@@ -450,42 +454,33 @@ func printOrders(writer http.ResponseWriter, request *http.Request) {
 			wis, _ := order.WorkItems()
 			pdf.AddPage()
 
-			/*err = pdf.SetFont("kai", "", 14)
-			if err != nil {
-				danger(err)
-			}*/
-
 			for _, cell := range template.Cells {
 				DrawCellText(&pdf, cell)
 			}
-			if order.UseFor == 0 {
-				template.Titles[0].Text = "安全生产部确认签章\n年    月    日"
-			} else {
-				template.Titles[0].Text = "设备管理中心确认签章\n年    月    日"
-			}
-			template.Titles[1].Text = "用车单位（签章）：" + deptMap()[order.DepartmentId]
-			template.Titles[2].Text = order.DateBegin + " - " + order.DateEnd
-			template.Titles[3].Text = "编号：" + fmt.Sprintf("GXJCWL%07d", 20000+order.Id)
-			template.Titles[4].Text = providerMap()[order.ProviderId]
-			template.Titles[5].Text = cartypeMap()[order.CarTypeId]
-			template.Titles[6].Text = order.CarNum
-			for _, cell := range template.Titles {
+
+			titles := []string{
+				checkDepts[order.UseFor],
+				"用车单位（签章）：" + deptMap()[order.DepartmentId],
+				order.DateBegin + " - " + order.DateEnd,
+				"编号：" + fmt.Sprintf("GXJCWL%07d", 20000+order.Id),
+				providerMap()[order.ProviderId], cartypeMap()[order.CarTypeId],
+				order.CarNum}
+
+			for i, cell := range template.Titles {
+				cell.Text = titles[i]
 				DrawCellText(&pdf, cell)
 			}
 			detailcells := []CellText{}
+
 			for i, wi := range wis {
-				cell1 := template.Details[0]
-				cell1.Text = wi.Work
-				cell1.Top = cell1.Top + float64(i)*25
-				detailcells = append(detailcells, cell1)
-				cell2 := template.Details[1]
-				cell2.Text = wi.Place
-				cell2.Top = cell2.Top + float64(i)*25
-				detailcells = append(detailcells, cell2)
-				cell3 := template.Details[2]
-				cell3.Text = fmt.Sprintf("%.2f%s", wi.Quantity, unitstrs[wi.Unit])
-				cell3.Top = cell3.Top + float64(i)*25
-				detailcells = append(detailcells, cell3)
+				texts := []string{wi.Work, wi.Place,
+					fmt.Sprintf("%.2f%s", wi.Quantity, unitstrs[wi.Unit])}
+				for j, text := range texts {
+					cell := template.Details[j]
+					cell.Text = text
+					cell.Top = cell.Top + float64(i)*25
+					detailcells = append(detailcells, cell)
+				}
 			}
 			for _, cell := range detailcells {
 				DrawCellText(&pdf, cell)
