@@ -450,10 +450,10 @@ func printOrders(writer http.ResponseWriter, request *http.Request) {
 			wis, _ := order.WorkItems()
 			pdf.AddPage()
 
-			err = pdf.SetFont("kai", "", 14)
+			/*err = pdf.SetFont("kai", "", 14)
 			if err != nil {
 				danger(err)
-			}
+			}*/
 
 			for _, cell := range template.Cells {
 				DrawCellText(&pdf, cell)
